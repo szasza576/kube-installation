@@ -195,6 +195,9 @@ In this section we install the Kubernetes core components with the help of kubea
    sudo systemctl enable kubelet
    ```
 2. Pull the base images for the K8s components
+   ```bash
+   sudo kubeadm config images pull
+   ```
 3. Create a configuration file which containers the Kubernetes Version, the ServiceCIDR, the PodCIDR and sets the systemd as cgroup driver. This config file will be used only for the installation.
    ```bash
    cat << EOF > kubeadm.conf
@@ -266,14 +269,12 @@ A Kubernetes cluster requires a network module to give IP address to the pods. W
    ```
 2. Deploy Calico directly from the internet
    ```bash
-   kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+   kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/tigera-operator.yaml
    ```
 
    Yes, correct. Calico runs on top of the Kubernetes cluster as a container and it gives the networking feature to Kubernetes. It is so much fun here :)
 3. Download the default config file and modify the PodCIDR to our CIDR. Then create this CRD in Kubernetes
    ```bash
-   kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
-   
    curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/custom-resources.yaml -s -o /tmp/custom-resources.yaml
    sed -i "s+192.168.0.0/16+$PodCIDR+g" /tmp/custom-resources.yaml
    sed -i "s+blockSize: 26+blockSize: 24+g" /tmp/custom-resources.yaml
