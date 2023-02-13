@@ -69,7 +69,8 @@ kubectl label namespace metallb-system pod-security.kubernetes.io/enforce=privil
 kubectl label namespace metallb-system pod-security.kubernetes.io/audit=privileged
 kubectl label namespace metallb-system pod-security.kubernetes.io/warn=privileged
 kubectl label namespace metallb-system app=metallb
-helm install metallb metallb/metallb -n metallb-system --wait
+helm install metallb metallb/metallb -n metallb-system --wait \
+  --set crds.validationFailurePolicy=Ignore
 
 cat <<EOF | kubectl apply -f -
 apiVersion: metallb.io/v1beta1
@@ -116,6 +117,7 @@ helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm upgrade --install metrics-server metrics-server/metrics-server \
     --set args={--kubelet-insecure-tls} \
+    --set hostNetwork.enabled=true \
     -n kube-system
 
 ## Install NVIDIA device plugin

@@ -313,8 +313,11 @@ Note that this won't work out of the box with Public Cloud environment as the IP
    ```
 3. Deploy MetalLB
    ```bash
-   helm install metallb metallb/metallb -n metallb-system --wait
+   helm install metallb metallb/metallb -n metallb-system --wait \
+     --set crds.validationFailurePolicy=Ignore
    ```
+
+   Note that the last option is just needed because of a bug in MetalLB. See more details here: https://github.com/metallb/metallb/issues/1597
 4. We also need to configure MetalLB
    ```bash
    cat <<EOF | kubectl apply -f -
@@ -404,6 +407,7 @@ We can collect very useful metrics from the nodes and the pods but this requires
    ```bash
    helm upgrade --install metrics-server metrics-server/metrics-server \
      --set args={--kubelet-insecure-tls} \
+     --set hostNetwork.enabled=true \
      -n kube-system
    ```
 
