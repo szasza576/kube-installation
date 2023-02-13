@@ -330,13 +330,10 @@ Note that this won't work out of the box with Public Cloud environment as the IP
 
    cat <<EOF | kubectl apply -f -
    apiVersion: metallb.io/v1beta1
-   kind: IPAddressPool
+   kind: L2Advertisement
    metadata:
-     name: local-pool
+     name: advertizer
      namespace: metallb-system
-   spec:
-     addresses:
-     - $IngressRange
    EOF
    ```
 
