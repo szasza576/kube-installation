@@ -1,5 +1,5 @@
 # Introduction
-This guide walk you through on the standard Kubernetes installation with    kubeadm and mainly focuses to [official Kubernetes documentation](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/).
+This guide walk you through on the standard Kubernetes installation with kubeadm and mainly focuses to [official Kubernetes documentation](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/).
 
 It is already assumed that you are familiar with Linux and have basic understanding about Kubernetes.
 
@@ -128,10 +128,10 @@ Kubernetes supports several container runtime. This guide will install and confi
 
 1. Add the repository and install it
    ```bash
-   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/   share/keyrings/docker-archive-keyring.gpg
+   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
    
    echo \
-     "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/   docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+     "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
    
    sudo apt update
@@ -155,7 +155,7 @@ Containerd is up and running. It is time to install the Kubernetes components.
 1. Add the repository and install the 3 tools
    ```bash
    sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-   echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.   kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+   echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
    
    sudo apt update
    sudo apt -y install kubelet=$K8sVersion kubeadm=$K8sVersion kubectl=$K8sVersion
@@ -180,7 +180,7 @@ Helm is a package manager tool what we will use for some components to the easy 
 1. Add the repository and install the tool.
    ```bash
    curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
-   echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg]    https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/   helm-stable-debian.list
+   echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
    sudo apt-get update
    sudo apt-get install helm
    ```
