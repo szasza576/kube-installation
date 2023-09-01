@@ -1,7 +1,7 @@
-# Introduction
-This guide walk you through on the standard Kubernetes installation with kubeadm and mainly focuses to [official Kubernetes documentation](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/).
+## Introduction
+This guide walks you through on the standard Kubernetes installation with kubeadm and mainly focuses to [official Kubernetes documentation](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/).
 
-It is already assumed that you are familiar with Linux and have basic understanding about Kubernetes.
+It is already assumed that you are familiar a bit with Linux and have basic understanding about Kubernetes.
 
 Beside the standard installation it also covers the following components:
 - Install Calico as CNI plugin
@@ -10,35 +10,35 @@ Beside the standard installation it also covers the following components:
 
 The guide just gives an educational overview about the different components and can be used only for learning or lab purposes but far from production environment! Really if you found this guide via Google, don't use it to setup your production cluster!
 
-# Compute requirements
+## Compute requirements
 This guide will show 1 master and 1 worker node hence it requires 2 machines. Either they are bare metal machines or virtual machines.
 
 If you deploy VMs then follow this minimal specification per VM:
 - 2 vCPU (in Azure B2s is perfect)
 - 4 GB RAM
 - 30 GB vHDD
-- Ubuntu 22.04 LTS (go with this exact image)
+- Ubuntu 22.04 LTS (go with this version)
 - Shared subnet
 - SSH access
 
 If you deploy into a cloud provider like Azure then it is better if you deploy into a dedicated vNet so we can avoid to mess up something.
 
-# Linux preparation
+## Linux preparation
 Once you have your VMs then follow the following steps to prepare them.
 
 **Execute these steps on BOTH machines!**
 
 1. Use your favorite SSH client (like Putty) and login to both VMs.
-2. Do a network design. You have a subnet where you deployed your BMs/VMs. In my case this is 10.10.0.0/24.
+2. Do a network design. You have a subnet where you deployed your BMs/VMs. In my case this is 192.168.0.0/24.
    - Your BMs and VMs have their own IP address. Note them (you can also use the ```ip a``` command to get the IPs)
-   - My Master node's IP is 10.10.0.4
-   - My Worker node's IP is 10.10.0.5
-   - We will also need some IP addresses to our exposed services. I reserve this range: 10.10.0.200 - 10.10.0.220
+   - My Master node's IP is 192.168.0.128
+   - My Worker node's IP is 192.168.0.129
+   - We will also need some IP addresses to our exposed services. I reserve this range: 192.168.0.140 - 192.168.0.149
    - Note that if you deployed your VMs in cloud then these services won't be automatically available and won't work in the vNet but that is okay in this lesson.
 3. Create environmental variables based on the IP addresses what we found out.
    - Create the "MasterIP" with the Master node's IP address
      ```bash
-     MasterIP="10.10.0.4"
+     MasterIP="192.168.0.128"
      ```
    - Create the "MasterName" and add a readable name for it
      ```bash
@@ -46,11 +46,11 @@ Once you have your VMs then follow the following steps to prepare them.
      ```
    - Create the "IngressRange" and add the IP range what we reserved to the K8s services
      ```bash
-     IngressRange="10.10.0.200-10.10.0.220"
+     IngressRange="192.168.0.140-192.168.0.149"
      ```
    - Create the "NFSCIDR" with the subnet CIDR
      ```bash
-     NFSCIDR="10.10.0.0/24"
+     NFSCIDR="192.168.0.128/29"
      ```
    - Create the "PodCIDR" with a random subnet CIDR which doesn't overlap with your network
      ```bash
@@ -62,7 +62,7 @@ Once you have your VMs then follow the following steps to prepare them.
      ```
    - Finally create the "K8sVersion" which contains the Kubernetes version what we wish to install
      ```bash
-     K8sVersion="1.25.4-00"
+     K8sVersion="v1.28"
      ```
 4. Activate auto service restart without notification and install updates on both machines:
    ```bash
@@ -121,7 +121,7 @@ Once you have your VMs then follow the following steps to prepare them.
    ```
 At this point the Linux is prepared to install the Kubernetes cluster related components.
 
-# Install containerd
+## Install containerd
 Kubernetes supports several container runtime. This guide will install and configure containerd as one of the most widely used runtime. Containerd is free and opensource.
 
 **Execute these steps on BOTH machines!**
@@ -147,24 +147,24 @@ Kubernetes supports several container runtime. This guide will install and confi
    sudo systemctl enable containerd
    ```
 
-# Install kubelet, kubeadm, kubectl
-Containerd is up and running. It is time to install the Kubernetes components.
+## Install kubelet, kubeadm, kubectl
+Containerd is up and running. It is time to install the Kubernetes components. Note, each K8s minor version has its own repository.
 
 **Execute these steps on BOTH machines!**
 
 1. Add the repository and install the 3 tools
    ```bash
-   sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-   echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-   
+   curl -fsSL https://pkgs.k8s.io/core:/stable:/${K8sVersion}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+   echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${K8sVersion}/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
    sudo apt update
-   sudo apt -y install kubelet=$K8sVersion kubeadm=$K8sVersion kubectl=$K8sVersion
+   sudo apt -y install kubelet kubeadm kubectl
    ```
 2. We also would like to avoid the accidentally updates and container restarts hence we put these tools on hold. (If you run your daily ```apt upgrade``` command then it will ignore these components. Because you run it daily, RIGHT??? :) )
    ```bash
    sudo apt-mark hold kubelet kubeadm kubectl
    ```
-3. There is an auto completion tool for kubectl which is a must have. (Note one of the command will fail which is okay)
+3. There is an auto completion tool for kubectl which is a must have. (Note that one of the command will fail which is okay)
    ```bash
    echo 'source <(kubectl completion bash)' >> /home/*/.bashrc
    echo 'source <(kubectl completion zsh)' >> /home/*/.zshrc
@@ -172,7 +172,7 @@ Containerd is up and running. It is time to install the Kubernetes components.
 
 These were the last components what we needed on all machines. Now we put the workers to the parking lane and focus on the Master node.
 
-# Install Helm
+## Install Helm
 Helm is a package manager tool what we will use for some components to the easy deployments hence we need to install it on the Master node.
 
 **Execute these steps on only the Master node!**
@@ -185,7 +185,7 @@ Helm is a package manager tool what we will use for some components to the easy 
    sudo apt-get install helm
    ```
 
-# Install Kubernetes on the Master node
+## Install Kubernetes on the Master node
 In this section we install the Kubernetes core components with the help of kubeadm.
 
 **Execute these steps on only the Master node!**
@@ -203,7 +203,7 @@ In this section we install the Kubernetes core components with the help of kubea
    cat << EOF > kubeadm.conf
    kind: ClusterConfiguration
    apiVersion: kubeadm.k8s.io/v1beta3
-   kubernetesVersion: $(echo $K8sVersion | cut -f1 -d "-")
+   kubernetesVersion: $K8sVersion
    networking:
      dnsDomain: cluster.local
      serviceSubnet: $ServiceCIDR
@@ -243,7 +243,7 @@ In this section we install the Kubernetes core components with the help of kubea
    kubectl taint nodes --all node-role.kubernetes.io/control-plane-
    ```
 
-# Connect the worker to the cluster
+## Connect the worker to the cluster
 As the Kubernetes API is already working hence we can connect the other VM to the cluster. If you check the printout of the kubeadm command then you can see that there is ```kubeadm join ...``` command. Copy it and paste it to the Worker node. Note that you need to run it as sudo.
 
 1. If you missed the kubeadm printout then you can generate a connection token with this command. Run this on the Master node:
@@ -258,7 +258,7 @@ As the Kubernetes API is already working hence we can connect the other VM to th
 
    Still not ready but that is still okay.
 
-# Install Calico as CNI plugin
+## Install Calico as CNI plugin
 A Kubernetes cluster requires a network module to give IP address to the pods. We will use Calico with a very simple configuration. Calico supports different networking methods and here we will go with a simple Overlay network.
 
 **Execute these steps on only the Master node!**
@@ -292,7 +292,7 @@ A Kubernetes cluster requires a network module to give IP address to the pods. W
 
 HURRAY, your cluster and nodes are finally **Ready** It was a long run ... but still not complete.
 
-# Install MetalLB
+## Install MetalLB
 There are different options to expose K8s services to the external world. If we would like to use the LoadBalancer type on an on-premise environment then we need a (Software based) loadbalancer. In this case the service will get a routable IP address from the subnet.
 
 Note that this won't work out of the box with Public Cloud environment as the IP addresses won't be registered into the vNet but that is a different story.
@@ -340,7 +340,7 @@ Note that this won't work out of the box with Public Cloud environment as the IP
    EOF
    ```
 
-# Install NFS
+## Install NFS
 This is way far from production grade as NFS doesn't provide proper authentication. The only thing is to restrict access to subnets (what we grant for the whole subnet). Nevertheless it is an easy to configure Persistent Volume driver for a lab.
 
 We will use the Master node as the storage provider.
@@ -394,10 +394,10 @@ We will use the Master node as the storage provider.
 
 Now you can create Persistent Volumes and then the Provisioner will automatically create a folder on the Master node and seamlessly attach it to your pods.
 
-# Install Metrics Server
+## Install Metrics Server
 We can collect very useful metrics from the nodes and the pods but this requires a service to collect them and make it visible to use.
 
-**Needless to say now but execute these steps on only the Master node!**
+**Needless to say now but execute these steps only on the Master node!**
 
 1. Add the Helm repo
    ```bash
@@ -417,7 +417,7 @@ We can collect very useful metrics from the nodes and the pods but this requires
    kubectl top nodes
    ```
 
-# Finally restart the nodes
-Very likely you also installed a new kernel and we made lot of configuration hence the best is to restart both of the nodes validate that our cluster survived a restart.
+## Finally restart the nodes
+Very likely you also installed a new kernel and we made lot of configuration hence the best is to restart both of the nodes to validate that our cluster survive a restart.
 
 Run: ```sudo reboot```

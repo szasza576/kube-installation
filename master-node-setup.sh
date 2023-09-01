@@ -1,12 +1,12 @@
 #!/bin/bash
 
-if [ -z ${K8sVersion+x} ]; then K8sVersion="1.25.4-00"; fi
+if [ -z ${K8sVersion+x} ]; then K8sVersion="v1.28"; fi
 if [ -z ${PodCIDR+x} ]; then PodCIDR="172.16.0.0/16"; fi
 if [ -z ${ServiceCIDR+x} ]; then ServiceCIDR="172.17.0.0/16"; fi
-if [ -z ${IngressRange+x} ]; then IngressRange="10.10.0.200-10.10.0.220"; fi
-if [ -z ${MasterIP+x} ]; then MasterIP="10.10.0.4"; fi
+if [ -z ${IngressRange+x} ]; then IngressRange="192.168.0.140-192.168.0.149"; fi
+if [ -z ${MasterIP+x} ]; then MasterIP="192.168.0.128"; fi
 if [ -z ${MasterName+x} ]; then MasterName="kube-master"; fi
-if [ -z ${NFSCIDR+x} ]; then NFSCIDR="10.10.0.0/24"; fi
+if [ -z ${NFSCIDR+x} ]; then NFSCIDR="192.168.0.128/29"; fi
 
 # Install Helm
 curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
@@ -21,7 +21,7 @@ sudo kubeadm config images pull
 cat << EOF > kubeadm.conf
 kind: ClusterConfiguration
 apiVersion: kubeadm.k8s.io/v1beta3
-kubernetesVersion: $(echo $K8sVersion | cut -f1 -d "-")
+kubernetesVersion: $K8sVersion
 networking:
   dnsDomain: cluster.local
   serviceSubnet: $ServiceCIDR

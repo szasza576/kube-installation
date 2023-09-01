@@ -1,12 +1,8 @@
 #!/bin/bash
 
-if [ -z ${K8sVersion+x} ]; then K8sVersion="1.25.4-00"; fi
-if [ -z ${PodCIDR+x} ]; then PodCIDR="172.16.0.0/16"; fi
-if [ -z ${ServiceCIDR+x} ]; then ServiceCIDR="172.17.0.0/16"; fi
-if [ -z ${IngressRange+x} ]; then IngressRange="10.10.0.200-10.10.0.220"; fi
-if [ -z ${MasterIP+x} ]; then MasterIP="10.10.0.4"; fi
+if [ -z ${K8sVersion+x} ]; then K8sVersion="v1.28"; fi
+if [ -z ${MasterIP+x} ]; then MasterIP="192.168.0.128"; fi
 if [ -z ${MasterName+x} ]; then MasterName="kube-master"; fi
-if [ -z ${NFSCIDR+x} ]; then NFSCIDR="10.10.0.0/24"; fi
 
 # General update
 sudo sed -i 's/#$nrconf{restart} = '"'"'i'"'"';/$nrconf{restart} = '"'"'a'"'"';/g' /etc/needrestart/needrestart.conf
@@ -77,11 +73,11 @@ sudo systemctl enable containerd
 
 
 # Install kubelet, kubeadm, kubectl
-sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+curl -fsSL https://pkgs.k8s.io/core:/stable:/${K8sVersion}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${K8sVersion}/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 sudo apt update
-sudo apt -y install kubelet=$K8sVersion kubeadm=$K8sVersion kubectl=$K8sVersion
+sudo apt -y install kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 
 echo 'source <(kubectl completion bash)' >> /home/*/.bashrc
