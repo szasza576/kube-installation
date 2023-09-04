@@ -12,7 +12,7 @@ if [ -z ${NFSCIDR+x} ]; then NFSCIDR="192.168.0.128/29"; fi
 curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
 sudo apt-get update
-sudo apt-get install helm
+sudo apt-get install -y helm
 
 # Configure master node
 sudo systemctl enable kubelet
@@ -21,7 +21,6 @@ sudo kubeadm config images pull
 cat << EOF > kubeadm.conf
 kind: ClusterConfiguration
 apiVersion: kubeadm.k8s.io/v1beta3
-kubernetesVersion: $K8sVersion
 networking:
   dnsDomain: cluster.local
   serviceSubnet: $ServiceCIDR
@@ -49,13 +48,12 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 test=$(kubectl get pods -A 2>&1)
 while ( echo $test | grep -q "refuse\|error" ); do echo "API server is still down..."; sleep 5; test=$(kubectl get pods -A 2>&1); done
 
-kubectl taint nodes --all node-role.kubernetes.io/master-
 kubectl taint nodes --all node-role.kubernetes.io/control-plane-
 
 # Configre Calico as network plugin
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/tigera-operator.yaml
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/tigera-operator.yaml
 
-curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/custom-resources.yaml -s -o /tmp/custom-resources.yaml
+curl https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/custom-resources.yaml -s -o /tmp/custom-resources.yaml
 sed -i "s+192.168.0.0/16+$PodCIDR+g" /tmp/custom-resources.yaml
 sed -i "s+blockSize: 26+blockSize: 24+g" /tmp/custom-resources.yaml
 kubectl create -f /tmp/custom-resources.yaml
@@ -117,11 +115,19 @@ helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm upgrade --install metrics-server metrics-server/metrics-server \
     --set args={--kubelet-insecure-tls} \
-    --set hostNetwork.enabled=true \
     -n kube-system
 
-## Install NVIDIA device plugin
-#sudo apt install -y nvidia-driver-510 nvidia-cuda-toolkit
+# Install NVIDIA GPU Operator
+helm repo add nvidia https://nvidia.github.io/gpu-operator
+helm repo update
 
-#kubectl create -f https://github.com/kubernetes/kubernetes/raw/master/cluster/addons/device-plugins/nvidia-gpu/daemonset.yaml
-#kubectl label nodes kubemaster cloud.google.com/gke-accelerator=gpu
+helm upgrade \
+  --install \
+  nvidia-operator \
+  nvidia/gpu-operator \
+  -n kube-system \
+  --set operator.defaultRuntime="containerd" \
+  --wait
+
+# Restart the node to validate everything is restartproof
+sudo reboot

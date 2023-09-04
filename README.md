@@ -182,7 +182,7 @@ Helm is a package manager tool what we will use for some components to the easy 
    curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
    sudo apt-get update
-   sudo apt-get install helm
+   sudo apt-get install -y helm
    ```
 
 ## Install Kubernetes on the Master node
@@ -198,12 +198,11 @@ In this section we install the Kubernetes core components with the help of kubea
    ```bash
    sudo kubeadm config images pull
    ```
-3. Create a configuration file which containers the Kubernetes Version, the ServiceCIDR, the PodCIDR and sets the systemd as cgroup driver. This config file will be used only for the installation.
+3. Create a configuration file which containers the ServiceCIDR, the PodCIDR and sets the systemd as cgroup driver. This config file will be used only for the installation.
    ```bash
    cat << EOF > kubeadm.conf
    kind: ClusterConfiguration
    apiVersion: kubeadm.k8s.io/v1beta3
-   kubernetesVersion: $K8sVersion
    networking:
      dnsDomain: cluster.local
      serviceSubnet: $ServiceCIDR
@@ -239,7 +238,6 @@ In this section we install the Kubernetes core components with the help of kubea
    AHHH it is NotReady :( ... no worries we will correct it in the next chapter.
 7. Kubernetes by default will taint the master node so it will run only the core containers but we also would like to use it for normal workloads too (see, I told you it is not production grade) hence we need to remove the taints. (Note, one of them might fail which is normal.)
    ```bash
-   kubectl taint nodes --all node-role.kubernetes.io/master-
    kubectl taint nodes --all node-role.kubernetes.io/control-plane-
    ```
 
@@ -259,7 +257,7 @@ As the Kubernetes API is already working hence we can connect the other VM to th
    Still not ready but that is still okay.
 
 ## Install Calico as CNI plugin
-A Kubernetes cluster requires a network module to give IP address to the pods. We will use Calico with a very simple configuration. Calico supports different networking methods and here we will go with a simple Overlay network.
+A Kubernetes cluster requires a network module to give IP address to the pods. We will use Calico with a very simple configuration. Calico supports different networking methods and here we will go with a simple Overlay network. Check Calico's installation guide here: https://docs.tigera.io/calico/latest/getting-started/kubernetes/quickstart
 
 **Execute these steps on only the Master node!**
 
@@ -269,19 +267,19 @@ A Kubernetes cluster requires a network module to give IP address to the pods. W
    ```
 2. Deploy Calico directly from the internet
    ```bash
-   kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/tigera-operator.yaml
+   kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/tigera-operator.yaml
    ```
 
    Yes, correct. Calico runs on top of the Kubernetes cluster as a container and it gives the networking feature to Kubernetes. It is so much fun here :)
 3. Download the default config file and modify the PodCIDR to our CIDR. Then create this CRD in Kubernetes
    ```bash
-   curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/custom-resources.yaml -s -o /tmp/custom-resources.yaml
+   curl https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/custom-resources.yaml -s -o /tmp/custom-resources.yaml
    sed -i "s+192.168.0.0/16+$PodCIDR+g" /tmp/custom-resources.yaml
    sed -i "s+blockSize: 26+blockSize: 24+g" /tmp/custom-resources.yaml
    kubectl create -f /tmp/custom-resources.yaml
    rm /tmp/custom-resources.yaml
    ```
-4. Wait until all your pods are coming to Running state.
+4. Wait until all your pods are coming to Running state. (Note, press CTRL + c to stop watch mode.)
    ```bash
    watch kubectl get pods -A
    ```
@@ -407,7 +405,6 @@ We can collect very useful metrics from the nodes and the pods but this requires
    ```bash
    helm upgrade --install metrics-server metrics-server/metrics-server \
      --set args={--kubelet-insecure-tls} \
-     --set hostNetwork.enabled=true \
      -n kube-system
    ```
 
@@ -417,7 +414,103 @@ We can collect very useful metrics from the nodes and the pods but this requires
    kubectl top nodes
    ```
 
+## (optional) Install Nvidia drivers
+You are doing great so far but very likely here comes the hardest part ... install Nvidia drivers on Linux.
+If you deploy the cluster on your own machine which has an Nvidia GPU or you use an equivalent VM from the cloud then you need to install the driver to the host and the Kubernetes Device Plugin to handle the extra card. You can install them by hand one by one or you can use the Nvidia GPU Operator which does everything for you.
+
+I suggest to take Option-1 but if you prefer to control your deployment then you can go with Option-2 as well.
+
+### Option 1: Deploy Nvidia GPU Operator
+Read more details here: https://github.com/NVIDIA/gpu-operator
+
+And here: https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/index.html
+
+1. Add the Nvidia repository to 
+   ```bash
+   helm repo add nvidia https://nvidia.github.io/gpu-operator
+   helm repo update
+   ```
+2. Deploy the Operator
+   ```bash
+   helm upgrade \
+     --install \
+     nvidia-operator \
+     nvidia/gpu-operator \
+     -n kube-system \
+     --set operator.defaultRuntime="containerd" \
+     --set driver.usePrecompiled="true" \
+     --wait
+   ```
+3. Wait until all components are up and running. (Note, press CTRL + c to stop watch mode.)
+   ```bash
+   watch kubectl get pods -n kube-system -l app.kubernetes.io/managed-by=gpu-operator
+   ```
+
+### Option 2: Install the Nvidia driver manually and then use the GPU Operator
+Sometimes you might face that the Operator cannot download the proper images or cannot install it because you have Secure Boot enabled. The best solution here is to install the GPU driver by our own and then use the GPU Operator for the rest.
+
+1. Install the Nvidia Driver
+   ```bash
+   sudo apt install -y nvidia-driver-535
+   ```
+2. It is adviced to reboot now. If you have Secure Boot enabled then you MUST reboot.
+   ```bash
+   sudo reboot
+   ```
+3. Add the Nvidia repository to 
+   ```bash
+   helm repo add nvidia https://nvidia.github.io/gpu-operator
+   helm repo update
+   ```
+4. Deploy the Operator
+   ```bash
+   helm upgrade \
+     --install \
+     nvidia-operator \
+     nvidia/gpu-operator \
+     -n kube-system \
+     --set operator.defaultRuntime="containerd" \
+     --set driver.enabled="false" \
+     --wait
+   ```
+5. Wait until all components are up and running. (Note, press CTRL + c to stop watch mode.)
+   ```bash
+   watch kubectl get pods -n kube-system -l app.kubernetes.io/managed-by=gpu-operator
+   ```
+
+### Option 3: Install the Nvidia driver and the Device Plugin manually
+Well, installing the Nvidia driver on Linux is not the easiest task. Hence these steps might not lead you to the full success.
+
+1. Install the GPU driver
+   ```bash
+   sudo apt install -y \
+     nvidia-driver-535 \
+     nvidia-cuda-toolkit \
+     libnvidia-compute-535-server
+   ```
+
+2. Deploy the Nvidia Device Plugin
+   ```bash
+   kubectl create -f https://github.com/kubernetes/kubernetes/raw/master/cluster/addons/device-plugins/nvidia-gpu/daemonset.yaml
+   kubectl label nodes $MasterName cloud.google.com/gke-accelerator=gpu
+   ```
+
+Alternatively you can install the latest CUDA SDK from the official repo. This is more recent thant the Ubunutu repository but might have some integration issues.
+1. Remove the current CUDA related packages.
+   ```bash
+   sudo apt remove -y nvidia-cuda-toolkit libnvidia-compute-535-server
+   sudo apt autoremove -y
+   ```
+
+2. Install CUDA SDK packages
+   ```bash
+   wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+ 
+   sudo apt-get install -y cuda
+   ```
+
+
 ## Finally restart the nodes
-Very likely you also installed a new kernel and we made lot of configuration hence the best is to restart both of the nodes to validate that our cluster survive a restart.
+Very likely you also installed a new kernel at the very beginning and we made lot of configuration hence the best is to restart both of the nodes to validate that our cluster survives a restart.
 
 Run: ```sudo reboot```
