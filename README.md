@@ -451,7 +451,7 @@ Sometimes you might face that the Operator cannot download the proper images or 
 
 1. Install the Nvidia Driver
    ```bash
-   sudo apt install -y nvidia-driver-515
+   sudo apt install -y nvidia-driver-470
    ```
 2. It is adviced to reboot now. If you have Secure Boot enabled then you MUST reboot.
    ```bash
@@ -484,9 +484,9 @@ Well, installing the Nvidia driver on Linux is not the easiest task. Hence these
 1. Install the GPU driver
    ```bash
    sudo apt install -y \
-     nvidia-driver-515 \
+     nvidia-driver-470 \
      nvidia-cuda-toolkit \
-     libnvidia-compute-515-server
+     libnvidia-compute-470-server
    ```
 
 2. Deploy the Nvidia Device Plugin
@@ -498,7 +498,7 @@ Well, installing the Nvidia driver on Linux is not the easiest task. Hence these
 Alternatively you can install the latest CUDA SDK from the official repo. This is more recent thant the Ubunutu repository but might have some integration issues.
 1. Remove the current CUDA related packages.
    ```bash
-   sudo apt remove -y nvidia-cuda-toolkit libnvidia-compute-515-server
+   sudo apt remove -y nvidia-cuda-toolkit libnvidia-compute-470-server
    sudo apt autoremove -y
    ```
 
