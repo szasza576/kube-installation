@@ -420,6 +420,8 @@ If you deploy the cluster on your own machine which has an Nvidia GPU or you use
 
 I suggest to take Option-1 but if you prefer to control your deployment then you can go with Option-2 as well.
 
+IMPORTANT, however it sounds a good idea to go with the latest (version 535 currently) nvidia driver but it isn't. Nvidia has a strange compatibility with the CUDA so the older driver here gives better compatibility with the applications.
+
 ### Option 1: Deploy Nvidia GPU Operator
 Read more details here: https://github.com/NVIDIA/gpu-operator
 
@@ -439,6 +441,7 @@ And here: https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/in
      -n kube-system \
      --set operator.defaultRuntime="containerd" \
      --set driver.usePrecompiled="true" \
+     --set driver.version="450" \
      --wait
    ```
 3. Wait until all components are up and running. (Note, press CTRL + c to stop watch mode.)
@@ -451,7 +454,7 @@ Sometimes you might face that the Operator cannot download the proper images or 
 
 1. Install the Nvidia Driver
    ```bash
-   sudo apt install -y nvidia-driver-470
+   sudo apt install -y nvidia-driver-450
    ```
 2. It is adviced to reboot now. If you have Secure Boot enabled then you MUST reboot.
    ```bash
@@ -484,9 +487,9 @@ Well, installing the Nvidia driver on Linux is not the easiest task. Hence these
 1. Install the GPU driver
    ```bash
    sudo apt install -y \
-     nvidia-driver-470 \
+     nvidia-driver-450 \
      nvidia-cuda-toolkit \
-     libnvidia-compute-470-server
+     libnvidia-compute-450-server
    ```
 
 2. Deploy the Nvidia Device Plugin
@@ -498,7 +501,7 @@ Well, installing the Nvidia driver on Linux is not the easiest task. Hence these
 Alternatively you can install the latest CUDA SDK from the official repo. This is more recent thant the Ubunutu repository but might have some integration issues.
 1. Remove the current CUDA related packages.
    ```bash
-   sudo apt remove -y nvidia-cuda-toolkit libnvidia-compute-470-server
+   sudo apt remove -y nvidia-cuda-toolkit libnvidia-compute-450-server
    sudo apt autoremove -y
    ```
 
