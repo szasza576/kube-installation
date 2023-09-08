@@ -24,7 +24,7 @@ If you deploy VMs then follow this minimal specification per VM:
 If you deploy into a cloud provider like Azure then it is better if you deploy into a dedicated vNet so we can avoid to mess up something.
 
 ## Linux preparation
-Once you have your VMs then follow the following steps to prepare them.
+Once you have your VMs/BMs then install Ubuntu 22.04 and setup networking with fixed IP addresses. Then follow the following steps to prepare the nodes.
 
 **Execute these steps on BOTH machines!**
 
