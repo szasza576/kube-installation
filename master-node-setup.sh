@@ -51,9 +51,9 @@ while ( echo $test | grep -q "refuse\|error" ); do echo "API server is still dow
 kubectl taint nodes --all node-role.kubernetes.io/control-plane-
 
 # Configre Calico as network plugin
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/tigera-operator.yaml
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/tigera-operator.yaml
 
-curl https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/custom-resources.yaml -s -o /tmp/custom-resources.yaml
+curl https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/custom-resources.yaml -s -o /tmp/custom-resources.yaml
 sed -i "s+192.168.0.0/16+$PodCIDR+g" /tmp/custom-resources.yaml
 sed -i "s+blockSize: 26+blockSize: 24+g" /tmp/custom-resources.yaml
 kubectl create -f /tmp/custom-resources.yaml
