@@ -128,7 +128,7 @@ helm upgrade \
   -n kube-system \
   --set operator.defaultRuntime="containerd" \
   --set driver.usePrecompiled="true" \
-  --set driver.version="450" \
+  --set driver.version="470" \
   --wait
 
 # Restart the node to validate everything is restartproof
