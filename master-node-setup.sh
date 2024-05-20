@@ -49,6 +49,7 @@ test=$(kubectl get pods -A 2>&1)
 while ( echo $test | grep -q "refuse\|error" ); do echo "API server is still down..."; sleep 5; test=$(kubectl get pods -A 2>&1); done
 
 kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+kubectl label nodes --all node.kubernetes.io/exclude-from-external-load-balancers-
 
 # Configre Calico as network plugin
 kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/tigera-operator.yaml
@@ -127,8 +128,7 @@ helm upgrade \
   nvidia/gpu-operator \
   -n kube-system \
   --set operator.defaultRuntime="containerd" \
-  --set driver.usePrecompiled="true" \
-  --set driver.version="470" \
+  --set driver.enabled="false" \
   --wait
 
 # Restart the node to validate everything is restartproof
