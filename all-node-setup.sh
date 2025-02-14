@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -z ${K8sVersion+x} ]; then K8sVersion="v1.28"; fi
+if [ -z ${K8sVersion+x} ]; then K8sVersion="v1.31"; fi
 if [ -z ${MasterIP+x} ]; then MasterIP="192.168.0.128"; fi
 if [ -z ${MasterName+x} ]; then MasterName="kube-master"; fi
 

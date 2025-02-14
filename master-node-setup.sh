@@ -1,12 +1,12 @@
 #!/bin/bash
 
-if [ -z ${K8sVersion+x} ]; then K8sVersion="v1.28"; fi
+if [ -z ${K8sVersion+x} ]; then K8sVersion="v1.31"; fi
 if [ -z ${PodCIDR+x} ]; then PodCIDR="172.16.0.0/16"; fi
 if [ -z ${ServiceCIDR+x} ]; then ServiceCIDR="172.17.0.0/16"; fi
 if [ -z ${IngressRange+x} ]; then IngressRange="192.168.0.140-192.168.0.149"; fi
 if [ -z ${MasterIP+x} ]; then MasterIP="192.168.0.128"; fi
 if [ -z ${MasterName+x} ]; then MasterName="kube-master"; fi
-if [ -z ${NFSCIDR+x} ]; then NFSCIDR="192.168.0.128/29"; fi
+if [ -z ${NFSCIDR+x} ]; then NFSCIDR="192.168.0.0/24"; fi
 
 # Install Helm
 curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
@@ -52,9 +52,9 @@ kubectl taint nodes --all node-role.kubernetes.io/control-plane-
 kubectl label nodes --all node.kubernetes.io/exclude-from-external-load-balancers-
 
 # Configre Calico as network plugin
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/tigera-operator.yaml
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.2/manifests/tigera-operator.yaml
 
-curl https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/custom-resources.yaml -s -o /tmp/custom-resources.yaml
+curl https://raw.githubusercontent.com/projectcalico/calico/v3.29.2/manifests/custom-resources.yaml -s -o /tmp/custom-resources.yaml
 sed -i "s+192.168.0.0/16+$PodCIDR+g" /tmp/custom-resources.yaml
 sed -i "s+blockSize: 26+blockSize: 24+g" /tmp/custom-resources.yaml
 kubectl create -f /tmp/custom-resources.yaml
